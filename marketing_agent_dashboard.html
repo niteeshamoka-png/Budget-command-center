@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Marketing Budget Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --canvas:#F1F3F8; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5D6B7E; --line:#DDE3EC; --soft:#F5F7FB;
+  --side:#101B33; --side-ink:#B9C5DC; --side-act:#1D2C4D;
+  --accent:#3552F5; --accent-ink:#FFFFFF; --pos:#0E9468; --pos-bg:#DDF3EA; --neg:#D13B56; --neg-bg:#FBE3E8;
+  --warn:#BD7608; --warn-bg:#FCEFD4; --info-bg:#E4E9FE;
+  --head:"Outfit","Trebuchet MS",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --canvas:#0A101D; --panel:#121B2E; --ink:#E6ECF7; --muted:#8FA0B8; --line:#253250; --soft:#18233A;
+    --side:#070C16; --side-ink:#8FA0B8; --side-act:#16213A;
+    --accent:#8097FF; --accent-ink:#0A101D; --pos:#3DCB98; --pos-bg:#12342A; --neg:#FF6B83; --neg-bg:#3A1B25;
+    --warn:#F0B04A; --warn-bg:#3A2B10; --info-bg:#1C2750; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --canvas:#0A101D; --panel:#121B2E; --ink:#E6ECF7; --muted:#8FA0B8; --line:#253250; --soft:#18233A;
+  --side:#070C16; --side-ink:#8FA0B8; --side-act:#16213A;
+  --accent:#8097FF; --accent-ink:#0A101D; --pos:#3DCB98; --pos-bg:#12342A; --neg:#FF6B83; --neg-bg:#3A1B25;
+  --warn:#F0B04A; --warn-bg:#3A2B10; --info-bg:#1C2750; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--canvas);color:var(--ink);font:400 14.5px/1.5 var(--body);-webkit-text-size-adjust:100%}
+h1,h2,h3,h4{font-family:var(--head);margin:0;letter-spacing:-.01em}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+/* sidebar */
+.side{background:var(--side);color:var(--side-ink);padding:20px 14px;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:2px 8px}
+.brand i{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#3552F5,#18C5A8);display:block;position:relative;flex:none}
+.brand i::after{content:"";position:absolute;left:7px;right:7px;bottom:7px;height:10px;border-left:3px solid #fff;border-bottom:3px solid #fff;transform:skewX(-20deg)}
+.brand b{font-family:var(--head);color:#fff;font-size:16px;line-height:1.15;display:block}
+.brand small{font-size:12px;color:var(--side-ink)}
+.nav{display:grid;gap:3px}
+.nav button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--side-ink);font-weight:500}
+.nav button:hover{background:var(--side-act);color:#fff}
+.nav button[aria-current=page]{background:var(--side-act);color:#fff;box-shadow:inset 3px 0 0 #6F86FF}
+.nav button:focus-visible{outline:2px solid #6F86FF}
+.nav .ct{margin-left:auto;font-size:12px;background:#2A3C66;color:#fff;border-radius:99px;padding:0 7px}
+.sidefoot{margin-top:auto;display:grid;gap:8px}
+.sidefoot .lbl{font-size:12px;color:#7C8CA8;padding:0 8px}
+.sbtn{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid #243557;background:transparent;color:var(--side-ink);font-weight:500}
+.sbtn:hover{border-color:#6F86FF;color:#fff}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.dstat{font-size:12px;color:#8FA0BC;padding:0 8px;min-height:1.3em}
+.dstat.err{color:#FF8CA0}
+/* content */
+.content{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:14px;padding:16px 26px 10px;flex-wrap:wrap}
+.topbar h1{font-size:25px;font-weight:700}
+.topbar p{margin:2px 0 0;color:var(--muted)}
+.topbar .grow{flex:1;min-width:200px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:99px;background:var(--soft);border:1px solid var(--line);font-size:13px;font-weight:500}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill.ready::before{background:var(--accent)} .pill.ok::before{background:var(--pos)} .pill.run::before{background:var(--warn);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.assump{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;margin:0 26px;padding:10px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.assump .f{display:flex;align-items:center;gap:10px;font-weight:500}
+.assump output{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600;min-width:3ch}
+.assump input[type=range]{width:130px;accent-color:var(--accent)}
+.assump input[type=number]{width:84px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--soft)}
+.assump label.chk{display:flex;gap:7px;align-items:center;font-weight:500}
+.assump .be{margin-left:auto;color:var(--muted);font-size:13px}
+main{padding:20px 26px 48px;display:grid;gap:18px}
+.page{display:none;gap:18px}
+.page.on{display:grid}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.panel h3{font-size:16px;margin-bottom:2px}
+.panel .sub{margin:0 0 12px;color:var(--muted);font-size:13.5px}
+.g2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px}
+.g2e{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.chartbox{position:relative;height:290px}
+.chartbox.tall{height:340px}.chartbox.short{height:230px}
+/* banner */
+.banner{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding:16px 20px;border-radius:12px;background:linear-gradient(110deg,#142456,#2542C9);color:#fff}
+.banner h3{color:#fff;font-size:17px}
+.banner p{margin:3px 0 0;color:#D4DCFF;font-size:14px}
+.banner .btn{background:#fff;color:#1B2D78;border-color:#fff;font-weight:600;margin-left:auto}
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px}
+.kpi small{color:var(--muted);font-weight:500}
+.kpi strong{display:block;font-family:var(--head);font-size:24px;line-height:1.2;margin:2px 0 3px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12.5px;font-weight:600}
+.kpi span.g{color:var(--pos)}.kpi span.b{color:var(--neg)}.kpi span.n{color:var(--muted)}
+.kpi:nth-child(3){border-top:3px solid var(--accent)}
+/* insights */
+.ins{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.ins li{padding:10px 12px;border-radius:8px;background:var(--soft);border-left:4px solid var(--muted)}
+.ins li.high{border-left-color:var(--neg)}.ins li.opp{border-left-color:var(--pos)}.ins li.warn{border-left-color:var(--warn)}.ins li.info{border-left-color:var(--accent)}
+.ins b{display:block;font-weight:600}
+.ins span{color:var(--muted);font-size:13.5px}
+/* tables */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:10px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:13px;color:var(--muted);font-weight:500;background:none}
+th button{all:unset;cursor:pointer;color:inherit}
+th button:hover,th button:focus-visible{color:var(--accent)}
+tbody tr.clk{cursor:pointer}tbody tr.clk:hover{background:var(--soft)}
+td.nm{font-weight:600}
+.pos{color:var(--pos);font-weight:600}.neg{color:var(--neg);font-weight:600}
+.chip{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:600}
+.chip.grow,.chip.pass,.chip.low{background:var(--pos-bg);color:var(--pos)}
+.chip.cut,.chip.fail,.chip.high{background:var(--neg-bg);color:var(--neg)}
+.chip.hold,.chip.info{background:var(--info-bg);color:var(--accent)}
+.chip.warn,.chip.med{background:var(--warn-bg);color:var(--warn)}
+.rbar{display:inline-block;position:relative;width:70px;height:8px;border-radius:3px;background:var(--line);vertical-align:middle;margin-right:8px}
+.rbar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.rbar u{position:absolute;top:-3px;bottom:-3px;border-left:2px dashed var(--ink);text-decoration:none}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filters button{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:4px 13px;font-weight:500}
+.filters button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+td input[type=number]{width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--soft);text-align:right}
+/* studio */
+.alloc{display:grid;gap:2px}
+.arow{display:grid;grid-template-columns:8rem minmax(0,1fr) 5.2rem 4.6rem;gap:4px 12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.arow:first-child{border-top:0}
+.arow label{font-weight:600}
+.arow input[type=range]{width:100%;accent-color:var(--accent)}
+.arow output{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.arow .mr{text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.meter{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.meter i{display:block;height:100%;background:var(--accent);transition:width .15s}
+.meter.over i{background:var(--neg)}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.trio div{background:var(--soft);border-radius:10px;padding:10px 12px}
+.trio small{color:var(--muted);display:block}
+.trio strong{font-family:var(--head);font-size:21px;font-variant-numeric:tabular-nums}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+/* agent */
+.steps{list-style:none;margin:0;padding:0}
+.steps li{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.steps li:first-child{border-top:0}
+.dot{width:12px;height:12px;border-radius:50%;margin-top:5px;border:2px solid var(--line)}
+li[data-s=run] .dot{border-color:var(--warn);background:var(--warn);animation:pulse 1s infinite}
+li[data-s=done] .dot{border-color:var(--pos);background:var(--pos)}
+.steps b{font-weight:600}
+.steps .call{display:block;font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.steps .out{margin:2px 0 0;font-size:14px}
+li[data-s=idle] .call,li[data-s=idle] .out,li[data-s=run] .out{display:none}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.checks li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
+.checks small{display:block;color:var(--muted)}
+.audit{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px;font-size:13.5px;color:var(--muted)}
+.field input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:var(--soft);border-radius:10px;padding:12px}
+.stat small{color:var(--muted);display:block}
+.stat strong{font-family:var(--head);font-size:22px}
+/* chat */
+.memo,.bubble{white-space:pre-wrap;overflow-wrap:anywhere}
+.memo{background:var(--soft);border-radius:10px;padding:14px;margin:0 0 12px;font:inherit}
+.chat{display:grid;gap:10px;margin-bottom:12px;max-height:420px;overflow:auto}
+.bubble{padding:9px 13px;border-radius:12px;max-width:90%}
+.bubble.u{background:var(--accent);color:var(--accent-ink);justify-self:end}
+.bubble.a{background:var(--soft);justify-self:start}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chips button{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:5px 12px;font-size:13.5px}
+.chips button:hover{border-color:var(--accent)}
+.ask{display:flex;gap:8px}
+.ask input{flex:1;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+/* dialog */
+dialog{border:1px solid var(--line);border-radius:14px;padding:0;background:var(--panel);color:var(--ink);width:min(920px,94vw);max-height:92vh;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(8,14,28,.55)}
+.dh{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dh h3{font-size:19px;flex:1}
+.db{padding:18px 20px;display:grid;gap:16px;overflow:auto;max-height:calc(92vh - 70px)}
+.mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.mini div{background:var(--soft);border-radius:10px;padding:9px 12px}
+.mini small{color:var(--muted);display:block;font-size:12.5px}
+.mini strong{font-family:var(--head);font-size:18px;font-variant-numeric:tabular-nums}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:column;padding:12px;gap:10px}
+  .nav{display:flex;overflow-x:auto;gap:4px}
+  .nav button{white-space:nowrap}
+  .sidefoot{grid-template-columns:repeat(2,1fr)}.sidefoot .lbl,.dstat{grid-column:1/-1}
+  .topbar,.assump,main{padding-left:14px;padding-right:14px}
+  .assump{margin:0 14px}
+  .g2e,.g3{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.mini,.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .arow{grid-template-columns:1fr 5rem;grid-template-areas:"l o" "s s" "m m"}
+  .arow label{grid-area:l}.arow input[type=range]{grid-area:s}.arow output{grid-area:o}.arow .mr{grid-area:m;text-align:left}.arow .dl{display:none}
+  .trio{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){.pill.run::before,li[data-s=run] .dot{animation:none}.meter i{transition:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" aria-label="Navigation">
+    <div class="brand"><i></i><div><b>Budget Command Center</b><small>Marketing AI agent</small></div></div>
+    <nav class="nav" id="nav">
+      <button data-page="overview" aria-current="page">Overview</button>
+      <button data-page="channels">Channels</button>
+      <button data-page="value">Customer value</button>
+      <button data-page="studio">Budget studio</button>
+      <button data-page="risk">Risk lab</button>
+      <button data-page="agent">Agent and audit <span class="ct" id="navCt" hidden></span></button>
+      <button data-page="ask">Ask Claude</button>
+    </nav>
+    <div class="sidefoot">
+      <span class="lbl">Data</span>
+      <button class="sbtn" id="regenBtn" type="button">Generate new sample</button>
+      <label class="sbtn" for="csvFile" style="cursor:pointer">Upload CSV</label>
+      <input id="csvFile" type="file" accept=".csv,text/csv">
+      <button class="sbtn" id="tplBtn" type="button" hidden>Download sample CSV</button>
+      <button class="sbtn" id="themeBtn" type="button">Theme: auto</button>
+      <div class="dstat" id="dstat" role="status"></div>
+    </div>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="grow"><h1 id="pgTitle">Overview</h1><p id="pgSub"></p></div>
+      <span class="pill ready" id="statusPill">Agent ready</span>
+      <button class="btn primary" id="runBtn" type="button">Run agent</button>
+    </header>
+    <div class="assump" role="group" aria-label="Assumptions">
+      <div class="f"><label for="margin">Gross margin</label><input id="margin" type="range" min="20" max="80" step="1" value="50"><output id="marginOut">50%</output></div>
+      <div class="f"><label for="budget">Budget (₹L)</label><input id="budget" type="number" min="10" step="1" value="100"></div>
+      <div class="f"><label for="cap">Max shift</label><input id="cap" type="range" min="10" max="100" step="5" value="70"><output id="capOut">±70%</output></div>
+      <label class="chk"><input id="refundOn" type="checkbox" checked> Net of refunds</label>
+      <span class="be" id="beText"></span>
+    </div>
+
+    <main>
+      <!-- OVERVIEW -->
+      <section class="page on" id="p-overview">
+        <div class="banner" id="banner"></div>
+        <div class="kpis" id="kpis"></div>
+        <div class="g2">
+          <div class="panel"><h3>Spend, gross profit and contribution by month</h3><p class="sub">Contribution is gross profit minus marketing spend. Below zero means the month lost money.</p><div class="chartbox"><canvas id="c-month"></canvas></div></div>
+          <div class="panel"><h3>What the agent noticed</h3><p class="sub">Findings ranked by importance.</p><ul class="ins" id="insights"></ul></div>
+        </div>
+        <div class="g2e">
+          <div class="panel"><h3>Share of spend vs share of gross profit</h3><p class="sub">A channel whose profit share is smaller than its spend share is being over-funded.</p><div class="chartbox"><canvas id="c-share"></canvas></div></div>
+          <div class="panel"><h3>Contribution by channel (₹L)</h3><p class="sub">What each channel earned after paying for itself.</p><div class="chartbox"><canvas id="c-contrib"></canvas></div></div>
+        </div>
+      </section>
+
+      <!-- CHANNELS -->
+      <section class="page" id="p-channels">
+        <div class="panel">
+          <h3>Channel scorecard</h3><p class="sub">Click a column to sort and a row to open the channel in detail. The dashed tick on each ROAS bar is break-even.</p>
+          <div class="filters" id="filters"></div>
+          <div class="tw"><table id="chTable"></table></div>
+        </div>
+      </section>
+
+      <!-- VALUE -->
+      <section class="page" id="p-value">
+        <div class="g2">
+          <div class="panel"><h3>Cost to win a customer vs profit from one</h3><p class="sub">Channels above the diagonal earn back more than they cost per customer. Bubble size is customers won.</p><div class="chartbox tall"><canvas id="c-bubble"></canvas></div></div>
+          <div class="panel"><h3>Refund assumptions</h3><p class="sub">Share of revenue refunded or returned. Edit a value and press Enter; every number in the dashboard updates.</p><div class="tw"><table id="valTable"></table></div></div>
+        </div>
+      </section>
+
+      <!-- STUDIO -->
+      <section class="page" id="p-studio">
+        <div class="g2">
+          <div class="panel">
+            <h3>Your budget plan</h3><p class="sub">Drag the sliders to test your own split. The profit estimate uses each channel's fitted response curve.</p>
+            <div class="trio" id="trio"></div>
+            <div class="alloc" id="alloc"></div>
+            <div class="meter" id="meter"><i></i></div>
+            <p class="note" id="meterTxt"></p>
+            <div class="btns" style="margin-top:12px">
+              <button class="btn primary sm" id="applyAgent" type="button">Apply agent plan</button>
+              <button class="btn sm" id="resetPlan" type="button">Reset to today</button>
+              <button class="btn sm" id="fitBudget" type="button">Scale to budget</button>
+              <button class="btn sm" id="saveScen" type="button">Save scenario</button>
+            </div>
+          </div>
+          <div style="display:grid;gap:18px;align-content:start">
+            <div class="panel"><h3>Spend by channel</h3><p class="sub">Today, agent plan and your plan.</p><div class="chartbox"><canvas id="c-plan"></canvas></div></div>
+            <div class="panel"><h3>How much budget is worth spending</h3><p class="sub">Best achievable profit at each total budget. The curve flattens where extra money stops paying back.</p><div class="chartbox"><canvas id="c-front"></canvas></div></div>
+          </div>
+        </div>
+        <div class="panel"><h3>Saved scenarios</h3><p class="sub">Compare plans side by side.</p><div class="tw"><table id="scenTable"></table></div></div>
+      </section>
+
+      <!-- RISK -->
+      <section class="page" id="p-risk">
+        <div class="stats" id="riskStats"></div>
+        <div class="g2e">
+          <div class="panel"><h3>Could the plan backfire?</h3><p class="sub">400 simulations that nudge each response curve within its statistical uncertainty. Bars show the change in annual profit vs today's mix.</p><div class="chartbox"><canvas id="c-mc"></canvas></div></div>
+          <div class="panel"><h3>Sensitivity to gross margin</h3><p class="sub">Profit under today's mix and under a plan re-optimised for each margin.</p><div class="chartbox"><canvas id="c-sens"></canvas></div></div>
+        </div>
+        <div class="panel"><h3>Evidence behind each response curve</h3><p class="sub">Exponent below 1 means diminishing returns. A wide range or low fit means the agent should be trusted less for that channel.</p><div class="tw"><table id="evTable"></table></div></div>
+      </section>
+
+      <!-- AGENT -->
+      <section class="page" id="p-agent">
+        <div class="g2">
+          <div class="panel"><h3>Agent trace</h3><p class="sub">Eight agents, each with one job. Every call is logged.</p><ol class="steps" id="steps"></ol></div>
+          <div style="display:grid;gap:18px;align-content:start">
+            <div class="panel"><h3>Guardrail checks</h3><p class="sub">Run automatically before a plan can be approved.</p><ul class="checks" id="checks"></ul></div>
+            <div class="panel field"><h3>Human decision</h3><p class="sub" id="decSub"></p>
+              <label for="reason" style="font-weight:500">Reason or note <span id="reasonReq" class="chip high" hidden>required</span></label>
+              <input id="reason" type="text" placeholder="Why are you approving this plan?" style="margin:6px 0 12px">
+              <div class="btns"><button class="btn primary" id="approveBtn" type="button">Approve plan</button><button class="btn" id="rejectBtn" type="button">Send back</button><button class="btn" id="planBtn" type="button" hidden>Download plan</button></div>
+              <ul class="audit" id="audit"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ASK -->
+      <section class="page" id="p-ask">
+        <div class="g2e">
+          <div class="panel"><h3>Ask the agent</h3><p class="sub">Answers use only the analysis in this dashboard.</p>
+            <div class="chat" id="chat" aria-live="polite"></div>
+            <div class="chips" id="chips"></div>
+            <div class="ask"><input id="q" type="text" placeholder="Ask about a channel, a risk or a what-if" aria-label="Question for the agent"><button class="btn primary" id="sendBtn" type="button">Ask</button><button class="btn" id="stopBtn" type="button" hidden>Stop</button></div>
+            <p class="note" id="chatNote" hidden></p>
+          </div>
+          <div class="panel"><h3>Memo for leadership</h3><p class="sub">A plain draft is built from the numbers. Claude can rewrite it as an executive memo.</p>
+            <pre class="memo" id="memo"></pre>
+            <div class="btns"><button class="btn primary" id="memoBtn" type="button" hidden>Write memo with Claude</button><button class="btn" id="memoStop" type="button" hidden>Stop</button></div>
+            <p class="note" id="memoNote" hidden></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgT">
+  <div class="dh"><h3 id="dlgT"></h3><button class="btn sm" id="dlgClose" type="button">Close</button></div>
+  <div class="db" id="dlgBody"></div>
+</dialog>
+
+<script>
+/* =================== assumed company data (12 months, ₹ lakh) =================== */
+const CHANNELS = [
+  {name:"Google Search", spend:20, cust:800, rev:60, b:0.85, refund:.03, drift:.05},
+  {name:"Meta",          spend:25, cust:900, rev:45, b:0.85, refund:.05, drift:-.30},
+  {name:"YouTube",       spend:15, cust:250, rev:12, b:0.80, refund:.06, drift:-.10},
+  {name:"Email",         spend:3,  cust:400, rev:24, b:0.70, refund:.02, drift:0},
+  {name:"Influencer",    spend:12, cust:200, rev:9,  b:0.80, refund:.10, drift:-.15},
+  {name:"Affiliate",     spend:10, cust:500, rev:22, b:0.90, refund:.07, drift:.05},
+  {name:"Display ads",   spend:15, cust:150, rev:6,  b:0.75, refund:.06, drift:-.25}
+];
+const MONTHS = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sum = (a,k) => a.reduce((t,r)=>t+(k?r[k]:r),0);
+const clamp = (x,a,b) => Math.min(b,Math.max(a,x));
+const inr = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const Lk = n => "₹" + n.toFixed(1) + "L";
+const sL = n => (n>=0?"+":"−") + "₹" + Math.abs(n).toFixed(1) + "L";
+const pct = (n,d=0) => (n>=0?"+":"−") + Math.abs(n*100).toFixed(d) + "%";
+const nowT = () => new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+const reduced = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+const S = {rows:[], source:"sample", seed:7, res:null, running:false, page:"overview", sort:{key:"profit",dir:-1}, filter:"all",
+  refund:Object.fromEntries(CHANNELS.map(c=>[c.name,c.refund])), plan:null, touched:false, scen:[], approved:null, audit:[], turns:[],
+  trace:null, dataVer:0, log:[]};
+let SAMPLE=null, DL=null;
+
+/* =================== data =================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gaussFn(rnd){return()=>{let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}}
+function makeData(seed){
+  const rnd=mulberry32(seed), gauss=gaussFn(rnd), rows=[];
+  for(const c of CHANNELS){
+    let s=Array.from({length:52},()=>Math.exp(0.4*gauss()));
+    const ss=sum(s); s=s.map(x=>x/ss*c.spend);
+    let rv=s.map((x,w)=>Math.pow(x,c.b)*Math.exp(0.09*gauss())*(1+c.drift*(2*w/51-1)));
+    if(c.name==="Influencer") rv[30]*=0.2;      // a paid burst that produced almost nothing
+    if(c.name==="Google Search") rv[19]*=1.9;   // an unexplained revenue spike
+    const rs=sum(rv); rv=rv.map(x=>x/rs*c.rev);
+    let cu=rv.map(x=>x*Math.exp(0.06*gauss())); const cs=sum(cu); cu=cu.map(x=>x/cs*c.cust);
+    for(let w=0;w<52;w++) rows.push({channel:c.name,week:w+1,spend:s[w],customers:cu[w],revenue:rv[w]});
+  }
+  return rows;
+}
+const toCSV = rows => "channel,week,spend,customers,revenue\n"+rows.map(r=>[r.channel,r.week,r.spend.toFixed(4),r.customers.toFixed(1),r.revenue.toFixed(4)].join(",")).join("\n");
+function parseCSV(text){
+  const lines=text.replace(/^\uFEFF/,"").split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2) throw new Error("The file has no data rows.");
+  const head=lines[0].split(",").map(h=>h.trim().toLowerCase());
+  const ix=k=>head.findIndex(h=>h.startsWith(k));
+  const ic=ix("channel"),iw=ix("week"),is=ix("spend"),iu=ix("customer"),ir=ix("revenue");
+  if(ic<0||is<0||iu<0||ir<0) throw new Error("Missing a column. Needed: channel, spend, customers, revenue.");
+  const rows=[];
+  lines.slice(1).forEach((l,i)=>{const p=l.split(",");const r={channel:(p[ic]||"").trim(),week:iw>=0?+p[iw]:i+1,spend:+p[is],customers:+p[iu],revenue:+p[ir]};
+    if(r.channel&&isFinite(r.spend)&&isFinite(r.customers)&&isFinite(r.revenue)&&isFinite(r.week)) rows.push(r);});
+  if(rows.length<8) throw new Error("Fewer than 8 valid rows were found.");
+  return rows;
+}
+
+/* =================== analytics core =================== */
+function optimize(ch,m,B,cap){
+  let lo=ch.map(c=>c.S*(1-cap)), hi=ch.map(c=>c.S*(1+cap));
+  const sl=sum(lo); if(sl>B) lo=lo.map(x=>x*B/sl);
+  const k=ch.map(c=>m*c.b*c.R*Math.pow(c.S,-c.b));
+  const alloc=lam=>ch.map((c,i)=>clamp(Math.pow(k[i]/lam,1/(1-c.b)),lo[i],Math.max(lo[i],hi[i])));
+  let a=Math.log(1e-9), z=Math.log(1e9);
+  for(let i=0;i<110;i++){const mid=(a+z)/2; if(sum(alloc(Math.exp(mid)))>B) a=mid; else z=mid;}
+  const lam=Math.max(Math.exp(z),1), next=alloc(lam);
+  return {next, lam, reserve:Math.max(0,B-sum(next))};
+}
+const profitOf=(ch,m,al,bs)=>ch.reduce((t,c,i)=>t+m*c.R*Math.pow(Math.max(al[i],0)/c.S,bs?bs[i]:c.b)-al[i],0);
+
+function analyze(rows,o){
+  const maxW=Math.max(...rows.map(r=>r.week),12), mw=maxW/12;
+  const by=new Map(); for(const r of rows){if(!by.has(r.channel))by.set(r.channel,[]);by.get(r.channel).push(r);}
+  const ch=[];
+  for(const [name,rs0] of by){
+    const rs=[...rs0].sort((a,b)=>a.week-b.week);
+    const rf=o.useRefund?(o.refund[name]??0.05):0;
+    const S0=sum(rs,"spend"),C=sum(rs,"customers"),R=sum(rs,"revenue")*(1-rf);
+    if(S0<=0||R<=0||C<=0) continue;
+    const mon={sp:Array(12).fill(0),rv:Array(12).fill(0),cu:Array(12).fill(0)};
+    rs.forEach(r=>{const mi=Math.min(11,Math.floor((r.week-1)/mw)); mon.sp[mi]+=r.spend; mon.rv[mi]+=r.revenue*(1-rf); mon.cu[mi]+=r.customers;});
+    const pts=rs.filter(r=>r.spend>0&&r.revenue>0).map(r=>({w:r.week,x:Math.log(r.spend),y:Math.log(r.revenue)}));
+    let b=0.8,se=0.12,r2=0,anom=[],n=pts.length,fitted=false;
+    if(n>=8){
+      const mx=sum(pts.map(p=>p.x))/n,my=sum(pts.map(p=>p.y))/n; let sxx=0,sxy=0,syy=0;
+      pts.forEach(p=>{sxx+=(p.x-mx)**2;sxy+=(p.x-mx)*(p.y-my);syy+=(p.y-my)**2;});
+      if(sxx>1e-6){
+        b=sxy/sxx; const a0=my-b*mx; let sse=0; const res=pts.map(p=>{const e=p.y-(a0+b*p.x);sse+=e*e;return e;});
+        const sig=Math.sqrt(sse/Math.max(1,n-2)); se=sig/Math.sqrt(sxx); r2=syy>0?1-sse/syy:0; fitted=true;
+        pts.forEach((p,i)=>{if(sig>0&&Math.abs(res[i])/sig>3) anom.push({w:p.w,kind:res[i]>0?"spike":"drop"});});
+      }
+    }
+    b=clamp(b,0.2,0.95);
+    const roasM=mon.rv.map((v,i)=>mon.sp[i]>0?v/mon.sp[i]:0), avg=a=>sum(a)/a.length;
+    const trend=avg(roasM.slice(0,3))>0?avg(roasM.slice(-3))/avg(roasM.slice(0,3))-1:0;
+    const gpc=o.m*R*1e5/C;
+    ch.push({name,S:S0,C,R,b,se,r2,n,fitted,anom,mon,roasM,trend,rf,cac:S0*1e5/C,roas:R/S0,profit:o.m*R-S0,mroas:b*R/S0,gpc,payback:gpc>0?12*(S0*1e5/C)/gpc:Infinity});
+  }
+  if(!ch.length) return null;
+  const be=1/o.m, op=optimize(ch,o.m,o.B,o.cap);
+  ch.forEach((c,i)=>{
+    c.next=op.next[i]; c.chg=c.next-c.S; c.pct=c.chg/c.S; c.verdict=c.pct>0.05?"grow":(c.pct<-0.05?"cut":"hold");
+    c.mnext=c.next>0.05?c.b*c.R/c.S*Math.pow(c.next/c.S,c.b-1):null;
+    c.pNext=o.m*c.R*Math.pow(c.next/c.S,c.b)-c.next;
+  });
+  const res={ch,m:o.m,B:o.B,cap:o.cap,be,reserve:op.reserve,lam:op.lam,totS:sum(ch,"S"),totC:sum(ch,"C"),totR:sum(ch,"R"),
+    profNow:sum(ch,"profit"),profNext:profitOf(ch,o.m,op.next),shift:ch.reduce((t,c)=>t+Math.max(0,c.chg),0)};
+  res.gp=o.m*res.totR;
+  res.mon={sp:Array(12).fill(0),rv:Array(12).fill(0),cu:Array(12).fill(0)};
+  ch.forEach(c=>{for(let i=0;i<12;i++){res.mon.sp[i]+=c.mon.sp[i];res.mon.rv[i]+=c.mon.rv[i];res.mon.cu[i]+=c.mon.cu[i];}});
+  res.mon.gp=res.mon.rv.map(v=>o.m*v); res.mon.con=res.mon.gp.map((v,i)=>v-res.mon.sp[i]);
+  // Monte Carlo on curve uncertainty
+  const g=gaussFn(mulberry32(99)); res.mc=[];
+  for(let s=0;s<400;s++){const bs=ch.map(c=>clamp(c.b+c.se*g(),0.2,0.95)); res.mc.push(profitOf(ch,o.m,op.next,bs)-res.profNow);}
+  const sorted=[...res.mc].sort((a,b)=>a-b), q=p=>sorted[Math.min(sorted.length-1,Math.floor(p*sorted.length))];
+  res.risk={p:res.mc.filter(x=>x>0).length/res.mc.length,p5:q(.05),med:q(.5),p95:q(.95)};
+  res.risk.level=res.risk.p>=0.9?"low":res.risk.p>=0.75?"med":"high";
+  // efficient frontier
+  res.front=[]; for(let f=0.4;f<=1.61;f+=0.05){const Bp=o.B*f,r=optimize(ch,o.m,Bp,o.cap);res.front.push({x:Bp,y:profitOf(ch,o.m,r.next)});}
+  // margin sensitivity
+  res.sens=[]; for(let mm=0.3;mm<=0.701;mm+=0.05){const r=optimize(ch,mm,o.B,o.cap);res.sens.push({m:mm,now:mm*res.totR-res.totS,next:profitOf(ch,mm,r.next)});}
+  // half-year deltas
+  const h=(a,i,j)=>sum(a.slice(i,j));
+  res.d={sp:h(res.mon.sp,6,12)/h(res.mon.sp,0,6)-1, rv:h(res.mon.rv,6,12)/h(res.mon.rv,0,6)-1, cu:h(res.mon.cu,6,12)/h(res.mon.cu,0,6)-1,
+    con:h(res.mon.con,6,12)-h(res.mon.con,0,6),
+    roas:h(res.mon.rv,6,12)/h(res.mon.sp,6,12)-h(res.mon.rv,0,6)/h(res.mon.sp,0,6),
+    cac:(h(res.mon.sp,6,12)/h(res.mon.cu,6,12))/(h(res.mon.sp,0,6)/h(res.mon.cu,0,6))-1};
+  res.anoms=ch.flatMap(c=>c.anom.map(a=>({ch:c.name,...a})));
+  res.insights=makeInsights(res);
+  res.checks=makeChecks(res);
+  return res;
+}
+function makeInsights(r){
+  const out=[], bad=r.ch.filter(c=>c.profit<0), badS=sum(bad,"S"), badP=sum(bad,"profit");
+  if(bad.length) out.push({sev:"high",t:`${bad.length} of ${r.ch.length} channels lose money`,b:`${bad.map(c=>c.name).join(", ")} take ${Math.round(badS/r.totS*100)}% of spend and lose ${Lk(Math.abs(badP))} after margin.`});
+  r.ch.filter(c=>c.profit<0&&c.C/r.totC>=0.15).forEach(c=>out.push({sev:"warn",t:`${c.name} is a volume trap`,b:`It wins ${Math.round(c.C/r.totC*100)}% of customers, but ROAS is ${c.roas.toFixed(1)}× against a ${r.be.toFixed(1)}× break-even.`}));
+  const best=[...r.ch].sort((a,b)=>b.mroas-a.mroas)[0];
+  if(best&&best.mroas>=r.be*1.2) out.push({sev:"opp",t:`Scale ${best.name}`,b:`The next ₹1 still returns ${best.mroas.toFixed(1)}× against ${r.be.toFixed(1)}× break-even. Agent suggests ${sL(best.chg)}.`});
+  r.ch.filter(c=>c.trend<-0.15).sort((a,b)=>a.trend-b.trend).slice(0,2).forEach(c=>out.push({sev:"warn",t:`${c.name} efficiency is falling`,b:`ROAS in the last three months is ${Math.abs(Math.round(c.trend*100))}% lower than in the first three.`}));
+  if(r.reserve>0.5) out.push({sev:"info",t:`${Lk(r.reserve)} does not need to be spent`,b:`After the moves, the remaining channels cannot earn back more than ₹1 per ₹1 at the margin.`});
+  if(r.anoms.length) out.push({sev:"info",t:`${r.anoms.length} unusual weeks flagged`,b:r.anoms.slice(0,3).map(a=>`${a.ch} week ${a.w} (${a.kind})`).join(", ")+". Check for tracking or billing errors."});
+  const ord={high:0,opp:1,warn:2,info:3}; return out.sort((a,b)=>ord[a.sev]-ord[b.sev]).slice(0,6);
+}
+function makeChecks(r){
+  const wk=Math.min(...r.ch.map(c=>c.n)), weak=r.ch.filter(c=>c.r2<0.5), maxPct=Math.max(...r.ch.map(c=>Math.abs(c.pct)));
+  const cons=Math.abs(sum(r.ch,"next")+r.reserve-r.B)<0.01;
+  return [
+    {s:cons?"pass":"fail",n:"Budget is conserved",d:`Allocated ${Lk(sum(r.ch,"next"))} plus ${Lk(r.reserve)} held back equals the ${Lk(r.B)} budget.`},
+    {s:maxPct<=r.cap+1e-6?"pass":"fail",n:"Shift limit respected",d:`Largest move is ${Math.round(maxPct*100)}% against a ±${Math.round(r.cap*100)}% limit.`},
+    {s:r.ch.every(c=>c.next>=0)?"pass":"fail",n:"No negative spend",d:"Every channel stays at zero or above."},
+    {s:wk>=26?"pass":"warn",n:"Enough history",d:`Shortest channel history is ${wk} weeks (minimum 26).`},
+    {s:weak.length?"warn":"pass",n:"Response curves fit the data",d:weak.length?`Weak fit (R² under 0.5): ${weak.map(c=>c.name).join(", ")}.`:"Every channel has R² of 0.5 or higher."},
+    {s:r.risk.p>=0.9?"pass":r.risk.p>=0.75?"warn":"fail",n:"Plan beats today's mix",d:`${Math.round(r.risk.p*100)}% of simulations show higher profit than today.`},
+    {s:r.anoms.length?"warn":"pass",n:"Data anomalies",d:r.anoms.length?`${r.anoms.length} unusual weeks. Review before approving.`:"No unusual weeks found."}
+  ];
+}
+function tracePlan(r){
+  const byC=[...r.ch].sort((a,b)=>a.cac-b.cac), bad=r.ch.filter(c=>c.profit<0), bs=r.ch.map(c=>c.b), above=r.ch.filter(c=>c.mroas>=r.be);
+  return [
+    ["Data agent",`load_and_join(source="${S.source}", rows=${S.rows.length})`,`${r.ch.length} channels: ${Lk(r.totS)} spend, ${Math.round(r.totC).toLocaleString("en-IN")} customers, ${Lk(r.totR)} net revenue.`],
+    ["Performance agent",`compute_kpis(margin=${Math.round(r.m*100)}%)`,`CAC from ${inr(byC[0].cac)} (${byC[0].name}) to ${inr(byC[byC.length-1].cac)} (${byC[byC.length-1].name}). Break-even ROAS ${r.be.toFixed(1)}×.`],
+    ["Anomaly agent",`scan_residuals(threshold=3σ)`,r.anoms.length?`${r.anoms.length} unusual weeks: ${r.anoms.slice(0,3).map(a=>`${a.ch} wk ${a.w}`).join(", ")}.`:"No unusual weeks."],
+    ["Waste detection agent",`flag_below_breakeven(roas<${r.be.toFixed(2)})`,bad.length?`${bad.map(c=>c.name).join(", ")} lose ${Lk(Math.abs(sum(bad,"profit")))} on ${Lk(sum(bad,"S"))} of spend.`:"No channel is below break-even."],
+    ["Effectiveness agent",`fit_response_curves(model="log-log OLS")`,`Exponents ${Math.min(...bs).toFixed(2)} to ${Math.max(...bs).toFixed(2)}. ${above.length} channel(s) still earn above break-even on the next ₹1.`],
+    ["Budget optimizer agent",`optimize(budget=${r.B}, cap=±${Math.round(r.cap*100)}%)`,`Shift ${Lk(r.shift)}, hold back ${Lk(r.reserve)}. Profit ${sL(r.profNow)} → ${sL(r.profNext)}.`],
+    ["Risk agent",`monte_carlo(n=400, perturb="curve exponents")`,`${Math.round(r.risk.p*100)}% chance of beating today; 5th percentile ${sL(r.risk.p5)}. Risk level: ${r.risk.level==="med"?"medium":r.risk.level}.`],
+    ["Reporting agent",`draft_memo()`,`Memo drafted. ${r.checks.filter(c=>c.s!=="pass").length} guardrail note(s) need your attention.`]
+  ];
+}
+
+/* =================== charts =================== */
+const charts={};
+const COL=()=>{const s=getComputedStyle(document.documentElement),g=n=>s.getPropertyValue(n).trim();return{ink:g("--ink"),muted:g("--muted"),line:g("--line"),acc:g("--accent"),pos:g("--pos"),neg:g("--neg"),warn:g("--warn"),panel:g("--panel")}};
+function mk(id,cfg){
+  if(!window.Chart) return null; const el=document.getElementById(id); if(!el) return null;
+  if(charts[id]) charts[id].destroy();
+  const c=COL(); Chart.defaults.color=c.muted; Chart.defaults.borderColor=c.line; Chart.defaults.font.family=getComputedStyle(document.body).fontFamily;
+  cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,animation:reduced?false:{duration:450}},cfg.options||{});
+  charts[id]=new Chart(el,cfg); return charts[id];
+}
+function killCharts(prefix){Object.keys(charts).forEach(k=>{if(k.startsWith(prefix)){charts[k].destroy();delete charts[k];}});}
+const gridOpt=c=>({grid:{color:c.line},border:{display:false}});
+
+/* =================== rendering =================== */
+const PAGES={overview:["Overview","How marketing money turned into profit over the last 12 months."],channels:["Channels","Every channel measured against break-even."],
+  value:["Customer value","Is each customer worth more than they cost to win?"],studio:["Budget studio","Test your own split against the agent's plan."],
+  risk:["Risk lab","How confident should we be in the recommendation?"],agent:["Agent and audit","What the agents did, what was checked, and who approved."],ask:["Ask Claude","Questions and a leadership memo, grounded in this analysis."]};
+
+function renderOverview(){
+  const r=S.res,c=COL();
+  $("#banner").innerHTML=`<div><h3>Recommendation: move ${Lk(r.shift)} to higher-return channels</h3><p>Contribution moves from ${sL(r.profNow)} to ${sL(r.profNext)} a year. ${Math.round(r.risk.p*100)}% of simulations beat today's mix${r.reserve>0.5?`, and ${Lk(r.reserve)} can be left unspent`:""}.</p></div><button class="btn" id="goStudio" type="button">Open budget studio</button>`;
+  $("#goStudio").onclick=()=>go("studio");
+  const k=[
+    ["Marketing spend",Lk(r.totS),pct(r.d.sp)+" H2 vs H1",null],
+    ["Net revenue",Lk(r.totR),pct(r.d.rv)+" H2 vs H1",r.d.rv>=0],
+    ["Contribution profit",sL(r.profNow),sL(r.d.con)+" H2 vs H1",r.d.con>=0],
+    ["Blended ROAS",(r.totR/r.totS).toFixed(2)+"×",(r.d.roas>=0?"+":"−")+Math.abs(r.d.roas).toFixed(2)+"× H2 vs H1",r.d.roas>=0],
+    ["Blended CAC",inr(r.totS*1e5/r.totC),pct(r.d.cac)+" H2 vs H1",r.d.cac<=0],
+    ["Customers won",Math.round(r.totC).toLocaleString("en-IN"),pct(r.d.cu)+" H2 vs H1",r.d.cu>=0]];
+  $("#kpis").innerHTML=k.map(x=>`<div class="kpi"><small>${x[0]}</small><strong>${x[1]}</strong><span class="${x[3]==null?"n":x[3]?"g":"b"}">${x[2]}</span></div>`).join("");
+  $("#insights").innerHTML=r.insights.map(i=>`<li class="${i.sev}"><b>${esc(i.t)}</b><span>${esc(i.b)}</span></li>`).join("");
+  mk("c-month",{data:{labels:MONTHS,datasets:[
+    {type:"bar",label:"Spend",data:r.mon.sp,backgroundColor:c.line,borderRadius:3,order:3},
+    {type:"bar",label:"Gross profit",data:r.mon.gp,backgroundColor:c.acc,borderRadius:3,order:2},
+    {type:"line",label:"Contribution",data:r.mon.con,borderColor:c.pos,backgroundColor:c.pos,tension:.3,pointRadius:3,order:1}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:10}}},scales:{x:{grid:{display:false}},y:{...gridOpt(c),title:{display:true,text:"₹ lakh"}}}}});
+  const sp=r.ch.map(x=>x.S/r.totS*100), gpT=sum(r.ch.map(x=>Math.max(0,r.m*x.R))), gps=r.ch.map(x=>r.m*x.R/gpT*100);
+  const order=r.ch.map((x,i)=>i).sort((a,b)=>sp[b]-sp[a]);
+  mk("c-share",{type:"bar",data:{labels:order.map(i=>r.ch[i].name),datasets:[{label:"Share of spend %",data:order.map(i=>sp[i]),backgroundColor:c.line,borderRadius:3},{label:"Share of gross profit %",data:order.map(i=>gps[i]),backgroundColor:c.acc,borderRadius:3}]},
+    options:{indexAxis:"y",plugins:{legend:{position:"bottom",labels:{boxWidth:10}}},scales:{x:{...gridOpt(c),ticks:{callback:v=>v+"%"}},y:{grid:{display:false}}}}});
+  const o2=[...r.ch].sort((a,b)=>b.profit-a.profit);
+  mk("c-contrib",{type:"bar",data:{labels:o2.map(x=>x.name),datasets:[{label:"Contribution ₹L",data:o2.map(x=>x.profit),backgroundColor:o2.map(x=>x.profit>=0?c.pos:c.neg),borderRadius:3}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{...gridOpt(c)}}}});
+}
+function spark(v,color){
+  const w=84,h=22,mx=Math.max(...v),mn=Math.min(...v),sp=mx-mn||1;
+  const pts=v.map((y,i)=>`${(i/(v.length-1)*w).toFixed(1)},${(h-2-(y-mn)/sp*(h-4)).toFixed(1)}`).join(" ");
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function renderChannels(){
+  const r=S.res,c=COL(),F=[["all","All"],["profit","Profitable"],["loss","Loss-making"],["grow","Agent: grow"],["cut","Agent: cut"]];
+  $("#filters").innerHTML=F.map(f=>`<button type="button" data-f="${f[0]}" aria-pressed="${S.filter===f[0]}">${f[1]}</button>`).join("");
+  let rows=r.ch.filter(x=>S.filter==="all"||(S.filter==="profit"&&x.profit>=0)||(S.filter==="loss"&&x.profit<0)||S.filter===x.verdict);
+  const k=S.sort.key; rows=[...rows].sort((a,b)=>(typeof a[k]==="string"?a[k].localeCompare(b[k]):((isFinite(a[k])?a[k]:1e9)-(isFinite(b[k])?b[k]:1e9)))*S.sort.dir);
+  const H=[["name","Channel"],["S","Spend"],["C","Customers"],["cac","CAC"],["roas","ROAS"],["profit","Contribution"],["payback","Payback"],["trend","Trend"],["chg","Agent action"]];
+  const maxR=Math.max(...r.ch.map(x=>x.roas),r.be*1.2)*1.05;
+  $("#chTable").innerHTML=`<thead><tr>${H.map(h=>`<th scope="col" aria-sort="${S.sort.key===h[0]?(S.sort.dir>0?"ascending":"descending"):"none"}"><button type="button" data-k="${h[0]}">${h[1]}${S.sort.key===h[0]?(S.sort.dir>0?" ▲":" ▼"):""}</button></th>`).join("")}</tr></thead><tbody>`+
+    rows.map(x=>`<tr class="clk" tabindex="0" data-ch="${esc(x.name)}"><td class="nm">${esc(x.name)}</td><td>${Lk(x.S)}</td><td>${Math.round(x.C).toLocaleString("en-IN")}</td><td>${inr(x.cac)}</td>
+      <td><span class="rbar"><i style="width:${Math.min(100,x.roas/maxR*100)}%;background:${x.roas>=r.be?c.pos:c.neg}"></i><u style="left:${r.be/maxR*100}%"></u></span>${x.roas.toFixed(1)}×</td>
+      <td class="${x.profit>=0?"pos":"neg"}">${sL(x.profit)}</td><td>${isFinite(x.payback)?x.payback.toFixed(1)+" mo":"never"}</td>
+      <td>${spark(x.roasM,x.trend>=-0.05?c.pos:c.neg)}</td><td><span class="chip ${x.verdict}">${{grow:"Grow",cut:"Cut",hold:"Hold"}[x.verdict]} ${x.verdict==="hold"?"":sL(x.chg)}</span></td></tr>`).join("")+`</tbody>`;
+}
+function renderValue(){
+  const r=S.res,c=COL();
+  const maxV=Math.max(...r.ch.map(x=>Math.max(x.cac,x.gpc)))*1.1, maxC=Math.max(...r.ch.map(x=>x.C));
+  const diag={id:"diag",beforeDatasetsDraw(ch){const {ctx,scales:{x,y}}=ch;ctx.save();ctx.strokeStyle=c.muted;ctx.setLineDash([6,5]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x.getPixelForValue(0),y.getPixelForValue(0));ctx.lineTo(x.getPixelForValue(maxV),y.getPixelForValue(maxV));ctx.stroke();ctx.restore();}};
+  const lbl={id:"lbl",afterDatasetsDraw(ch){const ctx=ch.ctx;ch.getDatasetMeta(0).data.forEach((el,i)=>{ctx.save();ctx.fillStyle=c.ink;ctx.font="600 12px "+getComputedStyle(document.body).fontFamily;ctx.textAlign="center";ctx.fillText(r.ch[i].name,el.x,el.y-el.options.radius-6);ctx.restore();});}};
+  mk("c-bubble",{type:"bubble",plugins:[diag,lbl],data:{datasets:[{label:"Channels",data:r.ch.map(x=>({x:x.cac,y:x.gpc,r:6+x.C/maxC*20})),backgroundColor:r.ch.map(x=>(x.gpc>=x.cac?c.pos:c.neg)+"AA"),borderColor:r.ch.map(x=>x.gpc>=x.cac?c.pos:c.neg)}]},
+    options:{layout:{padding:{top:22}},plugins:{legend:{display:false},tooltip:{callbacks:{label:t=>`${r.ch[t.dataIndex].name}: CAC ${inr(t.raw.x)}, profit per customer ${inr(t.raw.y)}`}}},
+      scales:{x:{min:0,max:maxV,...gridOpt(c),title:{display:true,text:"Cost to win a customer (₹)"}},y:{min:0,max:maxV,...gridOpt(c),title:{display:true,text:"Gross profit per customer (₹)"}}}}});
+  $("#valTable").innerHTML=`<thead><tr><th>Channel</th><th>Refund %</th><th>Profit / customer</th><th>CAC</th><th>Verdict</th></tr></thead><tbody>`+
+    r.ch.map(x=>`<tr><td class="nm">${esc(x.name)}</td><td><input type="number" min="0" max="60" step="0.5" value="${(S.refund[x.name]??0.05)*100}" data-rf="${esc(x.name)}" aria-label="Refund percent for ${esc(x.name)}"></td><td>${inr(x.gpc)}</td><td>${inr(x.cac)}</td><td><span class="chip ${x.gpc>=x.cac?"grow":"cut"}">${x.gpc>=x.cac?"Earns back":"Does not earn back"}</span></td></tr>`).join("")+`</tbody>`;
+}
+/* ---- studio ---- */
+const planArr=()=>S.res.ch.map(c=>S.plan[c.name]??c.S);
+function studioNums(){
+  const r=S.res,pl=planArr(),pp=profitOf(r.ch,r.m,pl);
+  return {pl,pp,tot:sum(pl)};
+}
+function renderStudio(){
+  const r=S.res,c=COL();
+  $("#alloc").innerHTML=r.ch.map((x,i)=>`<div class="arow"><label for="pl${i}">${esc(x.name)}</label><input id="pl${i}" type="range" min="0" max="${Math.max(x.S*2.5,5).toFixed(1)}" step="0.1" value="${(S.plan[x.name]??x.S).toFixed(1)}" data-i="${i}"><output id="plo${i}"></output><span class="mr" id="plm${i}"></span></div>`).join("");
+  mk("c-plan",{type:"bar",data:{labels:r.ch.map(x=>x.name),datasets:[{label:"Today",data:r.ch.map(x=>x.S),backgroundColor:c.line,borderRadius:3},{label:"Agent plan",data:r.ch.map(x=>x.next),backgroundColor:c.acc,borderRadius:3},{label:"Your plan",data:planArr(),backgroundColor:c.warn,borderRadius:3}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:10}}},scales:{x:{grid:{display:false}},y:{...gridOpt(c),title:{display:true,text:"₹ lakh"}}}}});
+  const n=studioNums();
+  mk("c-front",{type:"scatter",data:{datasets:[
+    {label:"Best profit at each budget",data:r.front,showLine:true,borderColor:c.acc,backgroundColor:c.acc,pointRadius:0,tension:.25,borderWidth:2.5},
+    {label:"Today",data:[{x:r.totS,y:r.profNow}],backgroundColor:c.neg,pointRadius:7},
+    {label:"Agent plan",data:[{x:sum(r.ch,"next"),y:r.profNext}],backgroundColor:c.pos,pointRadius:7},
+    {label:"Your plan",data:[{x:n.tot,y:n.pp}],backgroundColor:c.warn,pointRadius:7,pointStyle:"rectRot"}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:10}}},scales:{x:{...gridOpt(c),title:{display:true,text:"Total spend (₹L)"}},y:{...gridOpt(c),title:{display:true,text:"Contribution (₹L)"}}}}});
+  liveStudio(); renderScen();
+}
+function liveStudio(){
+  const r=S.res,n=studioNums();
+  r.ch.forEach((x,i)=>{
+    const s=n.pl[i], m=s>0.05?x.b*x.R/x.S*Math.pow(s/x.S,x.b-1):null;
+    const o=$("#plo"+i); if(!o) return; o.textContent=s.toFixed(1)+" L";
+    const e=$("#plm"+i); e.innerHTML=`${m==null?"–":m.toFixed(1)+"×"} next ₹1 <span class="${m!=null&&m>=r.be?"pos":"neg"}">${m!=null&&m>=r.be?"above":"below"} break-even</span>`;
+    const inp=$("#pl"+i); if(inp&&document.activeElement!==inp) inp.value=s;
+  });
+  $("#trio").innerHTML=`<div><small>Today's mix</small><strong class="${r.profNow>=0?"pos":"neg"}">${sL(r.profNow)}</strong></div><div><small>Agent plan</small><strong class="${r.profNext>=0?"pos":"neg"}">${sL(r.profNext)}</strong></div><div><small>Your plan</small><strong class="${n.pp>=0?"pos":"neg"}">${sL(n.pp)}</strong></div>`;
+  const over=n.tot>r.B+0.05; $("#meter").className="meter"+(over?" over":""); $("#meter i").style.width=Math.min(100,n.tot/r.B*100)+"%";
+  $("#meterTxt").textContent=`${Lk(n.tot)} allocated of ${Lk(r.B)} budget`+(over?`. You are ${Lk(n.tot-r.B)} over budget.`:n.tot<r.B-0.05?`. ${Lk(r.B-n.tot)} left unspent.`:".");
+  const p=charts["c-plan"]; if(p){p.data.datasets[2].data=n.pl; p.update("none");}
+  const f=charts["c-front"]; if(f){f.data.datasets[3].data=[{x:n.tot,y:n.pp}]; f.update("none");}
+}
+function renderScen(){
+  const r=S.res;
+  $("#scenTable").innerHTML=S.scen.length?`<thead><tr><th>Scenario</th><th>Spend</th><th>Contribution</th><th>vs today</th><th></th></tr></thead><tbody>`+S.scen.map((s,i)=>{const pp=profitOf(r.ch,r.m,r.ch.map(c=>s.plan[c.name]??c.S));return `<tr><td class="nm">${esc(s.name)}</td><td>${Lk(sum(r.ch.map(c=>s.plan[c.name]??c.S)))}</td><td class="${pp>=0?"pos":"neg"}">${sL(pp)}</td><td>${sL(pp-r.profNow)}</td><td><button class="btn sm" data-load="${i}" type="button">Load</button> <button class="btn sm" data-del="${i}" type="button">Delete</button></td></tr>`}).join("")+`</tbody>`:`<tbody><tr><td style="text-align:left;color:var(--muted)">No scenarios yet. Adjust the sliders and choose Save scenario.</td></tr></tbody>`;
+}
+function renderRisk(){
+  const r=S.res,c=COL(),k=r.risk;
+  $("#riskStats").innerHTML=`<div class="stat"><small>Chance the plan beats today</small><strong class="${k.p>=.9?"pos":k.p>=.75?"":"neg"}">${Math.round(k.p*100)}%</strong></div><div class="stat"><small>Typical gain</small><strong>${sL(k.med)}</strong></div><div class="stat"><small>Bad case (5th percentile)</small><strong class="${k.p5>=0?"pos":"neg"}">${sL(k.p5)}</strong></div><div class="stat"><small>Good case (95th percentile)</small><strong class="pos">${sL(k.p95)}</strong></div>`;
+  const mn=Math.min(...r.mc),mx=Math.max(...r.mc),nb=18,w=(mx-mn)/nb||1,bins=Array(nb).fill(0);
+  r.mc.forEach(v=>bins[Math.min(nb-1,Math.floor((v-mn)/w))]++);
+  const mids=bins.map((_,i)=>mn+w*(i+.5));
+  mk("c-mc",{type:"bar",data:{labels:mids.map(v=>v.toFixed(0)),datasets:[{label:"Simulations",data:bins,backgroundColor:mids.map(v=>v>=0?c.pos:c.neg),borderRadius:2,barPercentage:1,categoryPercentage:.95}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},title:{display:true,text:"Change in annual profit vs today (₹L)"}},y:{...gridOpt(c),title:{display:true,text:"Simulations"}}}}});
+  mk("c-sens",{type:"line",data:{labels:r.sens.map(s=>Math.round(s.m*100)+"%"),datasets:[{label:"Today's mix",data:r.sens.map(s=>s.now),borderColor:c.neg,backgroundColor:c.neg,tension:.2,pointRadius:3},{label:"Agent plan",data:r.sens.map(s=>s.next),borderColor:c.pos,backgroundColor:c.pos,tension:.2,pointRadius:3}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:10}}},scales:{x:{grid:{display:false},title:{display:true,text:"Gross margin"}},y:{...gridOpt(c),title:{display:true,text:"Contribution (₹L)"}}}}});
+  $("#evTable").innerHTML=`<thead><tr><th>Channel</th><th>Exponent</th><th>95% range</th><th>Fit (R²)</th><th>Weeks</th><th>Evidence</th></tr></thead><tbody>`+r.ch.map(x=>{const ev=x.r2>=.8?["Strong","pass"]:x.r2>=.5?["Fair","warn"]:["Weak","fail"];return `<tr><td class="nm">${esc(x.name)}</td><td>${x.b.toFixed(2)}</td><td>${Math.max(.2,x.b-1.96*x.se).toFixed(2)} to ${Math.min(.95,x.b+1.96*x.se).toFixed(2)}</td><td>${x.r2.toFixed(2)}</td><td>${x.n}</td><td><span class="chip ${ev[1]}">${ev[0]}</span></td></tr>`}).join("")+`</tbody>`;
+}
+function drawSteps(states,logs){
+  $("#steps").innerHTML=logs.map((l,i)=>`<li data-s="${states[i]}"><span class="dot"></span><div><b>${l[0]}</b><code class="call">${esc(l[1])}</code><p class="out">${esc(l[2])}</p></div></li>`).join("");
+}
+function renderAgent(){
+  const r=S.res; if(!S.running) drawSteps(S.trace.map(()=> "done"),S.trace);
+  $("#checks").innerHTML=r.checks.map(x=>`<li><span class="chip ${x.s}">${{pass:"Pass",warn:"Note",fail:"Fail"}[x.s]}</span><div><b>${esc(x.n)}</b><small>${esc(x.d)}</small></div></li>`).join("");
+  const hi=r.risk.level==="high", fail=r.checks.some(x=>x.s==="fail");
+  $("#decSub").innerHTML=`Risk level: <span class="chip ${r.risk.level}">${{low:"Low",med:"Medium",high:"High"}[r.risk.level]}</span> ${fail?"A guardrail failed, so approval is blocked.":hi?"A reason is required to approve a high-risk plan.":"The agent recommends. You decide."}`;
+  $("#reasonReq").hidden=!hi; $("#approveBtn").disabled=fail||!!S.approved; $("#planBtn").hidden=!(S.approved&&DL);
+  $("#approveBtn").textContent=S.approved?"Approved":"Approve plan";
+  $("#audit").innerHTML=S.audit.map(a=>`<li>${esc(a)}</li>`).join("");
+}
+function renderAsk(){
+  $("#memo").textContent=S.memo||memoText(S.res);
+  $("#chips").innerHTML=["Why cut Display ads?","What if margin falls to 40%?","Which channel should I test next?","Is this plan too risky?"].map(t=>`<button type="button">${t}</button>`).join("");
+  if(!S.turns.length&&!$("#chat").children.length) bubble("a","I can explain any channel, the risk numbers or a what-if. Pick a question below or type your own.");
+}
+function memoText(r){
+  const bad=r.ch.filter(c=>c.profit<0).sort((a,b)=>a.profit-b.profit), up=r.ch.filter(c=>c.verdict==="grow").sort((a,b)=>b.chg-a.chg), dn=r.ch.filter(c=>c.verdict==="cut").sort((a,b)=>a.chg-b.chg);
+  const L=(a,f)=>a.map(f).join("; ");
+  return `Verdict: at a ${Math.round(r.m*100)}% gross margin, marketing contributes ${sL(r.profNow)} a year on ${Lk(r.totS)} of spend. Reallocating within ±${Math.round(r.cap*100)}% per channel is projected to reach ${sL(r.profNext)}, with a ${Math.round(r.risk.p*100)}% chance of beating today's mix.\n\n`+
+  (bad.length?`Losing money today: ${L(bad,c=>`${c.name} (${sL(c.profit)}, ${c.roas.toFixed(1)}×)`)}.\n`:"")+(up.length?`Increase: ${L(up,c=>`${c.name} ${sL(c.chg)}`)}.\n`:"")+(dn.length?`Decrease: ${L(dn,c=>`${c.name} ${sL(c.chg)}`)}.\n`:"")+(r.reserve>.5?`Hold back ${Lk(r.reserve)} until a channel earns above break-even.\n`:"")+
+  `\nRisk: curves are fitted on past weeks. In the bad case (5th percentile) the change is ${sL(r.risk.p5)}. Roll out in steps and re-run after four weeks of new data.`;
+}
+/* ---- channel dialog ---- */
+function openChannel(name){
+  const r=S.res,x=r.ch.find(c=>c.name===name); if(!x) return; const c=COL();
+  $("#dlgT").textContent=x.name;
+  $("#dlgBody").innerHTML=`<div class="mini"><div><small>Spend</small><strong>${Lk(x.S)}</strong></div><div><small>ROAS</small><strong>${x.roas.toFixed(2)}×</strong></div><div><small>CAC</small><strong>${inr(x.cac)}</strong></div><div><small>Contribution</small><strong class="${x.profit>=0?"pos":"neg"}">${sL(x.profit)}</strong></div>
+    <div><small>Next ₹1 earns</small><strong>${x.mroas.toFixed(2)}×</strong></div><div><small>Curve exponent</small><strong>${x.b.toFixed(2)} ±${(1.96*x.se).toFixed(2)}</strong></div><div><small>Payback</small><strong>${isFinite(x.payback)?x.payback.toFixed(1)+" mo":"never"}</strong></div><div><small>Agent action</small><strong>${x.verdict==="hold"?"Hold":sL(x.chg)}</strong></div></div>
+    <p style="margin:0">${esc(x.name)} returns ${x.roas.toFixed(1)}× on average against a ${r.be.toFixed(1)}× break-even. Because returns diminish, the next ₹1 earns ${x.mroas.toFixed(1)}×, which is ${x.mroas>=r.be?"above":"below"} break-even, so the agent ${x.verdict==="grow"?"increases":x.verdict==="cut"?"reduces":"holds"} spend${x.verdict==="hold"?"":` to ${Lk(x.next)}`}.${x.anom.length?` Unusual weeks: ${x.anom.map(a=>`week ${a.w} (${a.kind})`).join(", ")}.`:""}</p>
+    <div class="g2e"><div><h4 style="margin-bottom:6px">Monthly spend and revenue</h4><div class="chartbox short"><canvas id="d-mon"></canvas></div></div><div><h4 style="margin-bottom:6px">Profit if spend changes</h4><div class="chartbox short"><canvas id="d-curve"></canvas></div></div></div>
+    <div><button class="btn sm" id="askCh" type="button">Ask Claude about ${esc(x.name)}</button></div>`;
+  $("#dlg").showModal();
+  mk("d-mon",{data:{labels:MONTHS,datasets:[{type:"bar",label:"Spend",data:x.mon.sp,backgroundColor:c.line,borderRadius:3},{type:"line",label:"Net revenue",data:x.mon.rv,borderColor:c.acc,backgroundColor:c.acc,tension:.3,pointRadius:3}]},options:{plugins:{legend:{position:"bottom",labels:{boxWidth:10}}},scales:{x:{grid:{display:false}},y:{...gridOpt(c)}}}});
+  const curve=[]; for(let f=0;f<=2.2001;f+=0.1){const s=x.S*f;curve.push({x:s,y:r.m*x.R*Math.pow(f,x.b)-s});}
+  mk("d-curve",{type:"scatter",data:{datasets:[{label:"Profit curve",data:curve,showLine:true,borderColor:c.acc,pointRadius:0,tension:.25,borderWidth:2.5},{label:"Today",data:[{x:x.S,y:x.profit}],backgroundColor:c.neg,pointRadius:7},{label:"Agent plan",data:[{x:x.next,y:x.pNext}],backgroundColor:c.pos,pointRadius:7}]},
+    options:{plugins:{legend:{position:"bottom",labels:{boxWidth:10}}},scales:{x:{...gridOpt(c),title:{display:true,text:"Spend (₹L)"}},y:{...gridOpt(c),title:{display:true,text:"Contribution (₹L)"}}}}});
+  $("#askCh").onclick=()=>{$("#dlg").close();go("ask");ask(`Explain the recommendation for ${x.name} and what could go wrong.`);};
+}
+$("#dlgClose").onclick=()=>$("#dlg").close();
+$("#dlg").addEventListener("close",()=>killCharts("d-"));
+$("#dlg").addEventListener("click",e=>{if(e.target===$("#dlg")) $("#dlg").close();});
+
+/* =================== orchestration =================== */
+function settings(){return {m:+$("#margin").value/100,B:Math.max(1,+$("#budget").value||100),cap:+$("#cap").value/100,useRefund:$("#refundOn").checked,refund:S.refund};}
+const key=()=>{const s=settings();return [s.m,s.B,s.cap,s.useRefund,S.dataVer,JSON.stringify(S.refund)].join("|");};
+function setPill(t,cls){const p=$("#statusPill");p.textContent=t;p.className="pill "+cls;}
+function recompute(why){
+  const s=settings(),res=analyze(S.rows,s); if(!res){dstat("No usable channels in the data.",true);return false;}
+  S.res=res; S.trace=tracePlan(res);
+  if(!S.touched||!S.plan) S.plan=Object.fromEntries(res.ch.map(c=>[c.name,c.next]));
+  else res.ch.forEach(c=>{if(S.plan[c.name]==null)S.plan[c.name]=c.S;});
+  S.memo=null;
+  $("#marginOut").textContent=Math.round(s.m*100)+"%"; $("#capOut").textContent="±"+Math.round(s.cap*100)+"%";
+  $("#beText").textContent=`Break-even ROAS ${res.be.toFixed(1)}×`;
+  if(S.approved&&S.approved.key!==key()){S.approved=null;S.audit.push(`${nowT()}  Approval cleared: ${why||"inputs changed"}.`);}
+  const flags=res.checks.filter(c=>c.s!=="pass").length; $("#navCt").hidden=!flags; $("#navCt").textContent=flags;
+  setPill(S.approved?"Plan approved":"Plan ready",S.approved?"ok":"ready");
+  return true;
+}
+function renderPage(){
+  Object.keys(charts).forEach(k=>{if(!k.startsWith("d-")){charts[k].destroy();delete charts[k];}});
+  ({overview:renderOverview,channels:renderChannels,value:renderValue,studio:renderStudio,risk:renderRisk,agent:renderAgent,ask:renderAsk})[S.page]();
+}
+function go(p){
+  S.page=p; $$("#nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.page===p?"page":"false"));
+  $$(".page").forEach(s=>s.classList.toggle("on",s.id==="p-"+p));
+  $("#pgTitle").textContent=PAGES[p][0]; $("#pgSub").textContent=PAGES[p][1];
+  if(S.res) renderPage(); window.scrollTo({top:0});
+}
+function refresh(why){ if(S.running) return; if(recompute(why)) renderPage(); }
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function runAgent(){
+  if(S.running) return; if(!recompute("re-run")) return;
+  S.running=true; $("#runBtn").disabled=true; setPill("Agent running","run"); go("agent");
+  const st=S.trace.map(()=>"idle"), view=S.trace.map(t=>[t[0],t[1],""]);
+  drawSteps(st,view);
+  for(let i=0;i<S.trace.length;i++){st[i]="run";drawSteps(st,view);await wait(reduced?0:480);st[i]="done";view[i]=S.trace[i];drawSteps(st,view);}
+  S.running=false; $("#runBtn").disabled=false; $("#runBtn").textContent="Re-run agent";
+  S.audit.push(`${nowT()}  Agent run completed: ${S.trace.length} agents, ${S.res.checks.filter(c=>c.s!=="pass").length} guardrail note(s).`);
+  setPill(S.approved?"Plan approved":"Plan ready",S.approved?"ok":"ready"); renderPage();
+}
+function dstat(t,err){const e=$("#dstat");e.textContent=t;e.classList.toggle("err",!!err);}
+function loadRows(rows,source){
+  S.rows=rows;S.source=source;S.dataVer++;S.touched=false;
+  $("#budget").value=Math.round(sum(rows,"spend")*10)/10;
+  dstat(source==="sample"?`Sample: ${rows.length} weekly rows, 7 channels.`:`Uploaded: ${rows.length} rows.`);
+  refresh("data changed");
+}
+
+/* =================== events =================== */
+$("#nav").addEventListener("click",e=>{const b=e.target.closest("button[data-page]");if(b)go(b.dataset.page);});
+$("#runBtn").onclick=runAgent;
+["margin","budget","cap"].forEach(id=>$("#"+id).addEventListener("input",()=>refresh("assumptions changed")));
+$("#refundOn").addEventListener("change",()=>refresh("refund setting changed"));
+$("#regenBtn").onclick=()=>{S.seed=Math.floor(Math.random()*1e6);loadRows(makeData(S.seed),"sample");};
+$("#csvFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{loadRows(parseCSV(await f.text()),"upload");}catch(err){dstat(err.message,true);}e.target.value="";};
+$("#tplBtn").onclick=async()=>{try{await DL.save({filename:"sample_marketing_data.csv",data:toCSV(S.source==="sample"?S.rows:makeData(7))});}catch(e){if(e.code!=="declined")dstat("Could not save ("+e.code+").",true);}};
+let themeMode=0; $("#themeBtn").onclick=()=>{themeMode=(themeMode+1)%3;const m=["auto","light","dark"][themeMode];if(m==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",m);$("#themeBtn").textContent="Theme: "+m;if(S.res)renderPage();};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.res&&themeMode===0)renderPage();});
+$("#filters").addEventListener("click",e=>{const b=e.target.closest("button[data-f]");if(b){S.filter=b.dataset.f;renderChannels();}});
+$("#chTable").addEventListener("click",e=>{const h=e.target.closest("button[data-k]");if(h){const k=h.dataset.k;S.sort=S.sort.key===k?{key:k,dir:-S.sort.dir}:{key:k,dir:k==="name"?1:-1};renderChannels();return;}
+  const tr=e.target.closest("tr[data-ch]");if(tr)openChannel(tr.dataset.ch);});
+$("#chTable").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr[data-ch]");if(tr)openChannel(tr.dataset.ch);}});
+$("#valTable").addEventListener("change",e=>{const i=e.target.closest("input[data-rf]");if(i){S.refund[i.dataset.rf]=clamp((+i.value||0)/100,0,.6);refresh("refund assumption changed");}});
+$("#alloc").addEventListener("input",e=>{const i=e.target.closest("input[data-i]");if(!i)return;S.plan[S.res.ch[+i.dataset.i].name]=+i.value;S.touched=true;liveStudio();});
+$("#applyAgent").onclick=()=>{S.touched=false;S.plan=Object.fromEntries(S.res.ch.map(c=>[c.name,c.next]));renderStudio();};
+$("#resetPlan").onclick=()=>{S.touched=true;S.plan=Object.fromEntries(S.res.ch.map(c=>[c.name,c.S]));renderStudio();};
+$("#fitBudget").onclick=()=>{const n=studioNums();if(n.tot>0){S.touched=true;const f=S.res.B/n.tot;S.res.ch.forEach(c=>S.plan[c.name]=(S.plan[c.name]??c.S)*f);renderStudio();}};
+$("#saveScen").onclick=()=>{if(S.scen.length>=5)S.scen.shift();S.scen.push({name:"Scenario "+(S.scen.length?+S.scen[S.scen.length-1].name.split(" ")[1]+1:1),plan:{...S.plan}});renderScen();};
+$("#scenTable").addEventListener("click",e=>{const l=e.target.closest("[data-load]"),d=e.target.closest("[data-del]");
+  if(l){S.touched=true;S.plan={...S.scen[+l.dataset.load].plan};renderStudio();}else if(d){S.scen.splice(+d.dataset.del,1);renderScen();}});
+$("#approveBtn").onclick=()=>{const r=S.res,hi=r.risk.level==="high",why=$("#reason").value.trim();
+  if(hi&&!why){$("#reason").focus();$("#reason").placeholder="Enter a reason to approve a high-risk plan";return;}
+  S.approved={key:key()};S.audit.push(`${nowT()}  Plan approved (risk ${r.risk.level}, margin ${Math.round(r.m*100)}%, cap ±${Math.round(r.cap*100)}%)${why?`. Note: ${why}`:""}.`);
+  setPill("Plan approved","ok");renderAgent();};
+$("#rejectBtn").onclick=()=>{S.approved=null;S.audit.push(`${nowT()}  Plan sent back for changes.`);setPill("Plan ready","ready");renderAgent();};
+$("#planBtn").onclick=async()=>{const r=S.res;if(!DL)return;const act=c=>c.verdict==="grow"?"Increase":c.verdict==="cut"?"Decrease":"Hold";
+  const csv="channel,current_spend_lakh,recommended_spend_lakh,change_lakh,action\n"+r.ch.map(c=>[c.name,c.S.toFixed(2),c.next.toFixed(2),c.chg.toFixed(2),act(c)].join(",")).join("\n")+`\nHeld back,0,${r.reserve.toFixed(2)},${r.reserve.toFixed(2)},Reserve`;
+  try{await DL.save({filename:"approved_budget_plan.csv",data:csv});}catch(e){if(e.code!=="declined"){S.audit.push(`${nowT()}  Could not save plan (${e.code}).`);renderAgent();}}};
+
+/* =================== Claude features =================== */
+function context(){
+  const r=S.res;
+  return JSON.stringify({assumptions:{gross_margin:r.m,break_even_roas:+r.be.toFixed(2),budget_lakh:r.B,max_shift:r.cap,units:"₹ lakh per year; CAC and per-customer values in ₹"},
+    totals:{spend:+r.totS.toFixed(1),net_revenue:+r.totR.toFixed(1),contribution_now:+r.profNow.toFixed(1),contribution_agent_plan:+r.profNext.toFixed(1),held_back:+r.reserve.toFixed(1)},
+    risk:{p_beats_today:+r.risk.p.toFixed(2),p5:+r.risk.p5.toFixed(1),median:+r.risk.med.toFixed(1),p95:+r.risk.p95.toFixed(1),level:r.risk.level},
+    guardrails:r.checks.map(c=>`${c.s}: ${c.n}`), anomalies:r.anoms.slice(0,6),
+    channels:r.ch.map(c=>({name:c.name,spend:+c.S.toFixed(1),customers:Math.round(c.C),net_revenue:+c.R.toFixed(1),cac:Math.round(c.cac),roas:+c.roas.toFixed(2),contribution:+c.profit.toFixed(1),payback_months:isFinite(c.payback)?+c.payback.toFixed(1):null,roas_trend_3m:+c.trend.toFixed(2),curve_exponent:+c.b.toFixed(2),curve_r2:+c.r2.toFixed(2),marginal_roas_now:+c.mroas.toFixed(2),agent_spend:+c.next.toFixed(1),change:+c.chg.toFixed(1),action:c.verdict}))});
+}
+const errCopy=e=>e.code==="not_granted"?"Claude access was declined for this page.":e.code==="rate_limited"?"Too many requests. Wait a moment and try again.":e.code==="cancelled"?"":"Claude could not answer ("+(e.code||"error")+").";
+let memoCtl=null,chatCtl=null;
+$("#memoBtn").onclick=async()=>{
+  if(!SAMPLE||!S.res)return; memoCtl=new AbortController();$("#memoBtn").hidden=true;$("#memoStop").hidden=false;$("#memoNote").hidden=true;$("#memo").textContent="Thinking…";
+  const prompt="You are the Reporting agent in a marketing budget optimization system. Write an executive memo (under 200 words) for a CMO and CFO using ONLY the data below. Format: one-sentence verdict; three short lines on what to change and why; one risk (use the risk numbers) and one test to run. Plain text, no markdown, amounts in ₹ lakh.\n\nDATA:\n"+context();
+  try{await SAMPLE(prompt,{signal:memoCtl.signal,cache:false,onText:({text})=>{$("#memo").textContent=text;S.memo=text;}});}
+  catch(e){$("#memo").textContent=e.text||memoText(S.res);S.memo=e.text||null;const m=errCopy(e);if(m){$("#memoNote").textContent=m;$("#memoNote").hidden=false;}}
+  finally{$("#memoBtn").hidden=false;$("#memoStop").hidden=true;$("#memoBtn").textContent="Rewrite memo";}
+};
+$("#memoStop").onclick=()=>memoCtl&&memoCtl.abort();
+function bubble(cls,t){const d=document.createElement("div");d.className="bubble "+cls;d.textContent=t;$("#chat").appendChild(d);$("#chat").scrollTop=1e9;return d;}
+async function ask(q){
+  if(!SAMPLE||!S.res||!q.trim())return; if(S.page!=="ask")go("ask");
+  bubble("u",q);$("#q").value="";$("#chatNote").hidden=true;S.turns.push({role:"user",content:q});
+  const rules="You are the Marketing Budget Agent inside a dashboard. Answer using ONLY the analysis data below. For what-if questions, reason with each channel's curve_exponent and marginal_roas and say the answer is approximate. Mention uncertainty where the risk or curve_r2 numbers matter. Be direct, under 130 words, plain text, no markdown.\n\nDATA:\n"+context();
+  const msgs=[{role:"user",content:rules},{role:"assistant",content:"Understood. Ask me about the analysis."},...S.turns];
+  const b=bubble("a","Thinking…");chatCtl=new AbortController();$("#sendBtn").hidden=true;$("#stopBtn").hidden=false;
+  try{const {text}=await SAMPLE(msgs,{signal:chatCtl.signal,cache:false,onText:({text})=>{b.textContent=text;$("#chat").scrollTop=1e9;}});S.turns.push({role:"assistant",content:text});}
+  catch(e){if(e.text){b.textContent=e.text;S.turns.push({role:"assistant",content:e.text});}else{b.remove();S.turns.pop();}const m=errCopy(e);if(m){$("#chatNote").textContent=m;$("#chatNote").hidden=false;}}
+  finally{$("#sendBtn").hidden=false;$("#stopBtn").hidden=true;}
+}
+$("#sendBtn").onclick=()=>ask($("#q").value);
+$("#q").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();ask($("#q").value);}});
+$("#stopBtn").onclick=()=>chatCtl&&chatCtl.abort();
+$("#chips").addEventListener("click",e=>{if(e.target.tagName==="BUTTON")ask(e.target.textContent);});
+function claudeUI(){const on=!!SAMPLE;$("#memoBtn").hidden=!on;$(".ask").hidden=!on;$("#chips").hidden=!on;
+  if(!on){$("#chatNote").textContent="Chat and memo rewriting need Claude access, which is not available in this view.";$("#chatNote").hidden=false;}}
+
+/* =================== boot =================== */
+S.log=[]; loadRows(makeData(S.seed),"sample");
+S.audit.push(`${nowT()}  Agents ran automatically on load with sample data.`);
+go("overview"); claudeUI();
+if(!window.Chart){document.querySelector("main").insertAdjacentHTML("afterbegin",`<div class="panel"><b>Charts could not load.</b> Tables and numbers still work. Check your connection and reload.</div>`);}
+(async()=>{try{if(window.claude&&window.claude.use){SAMPLE=await window.claude.use("sample");DL=await window.claude.use("downloads");}}catch(e){SAMPLE=null;DL=null;}
+  claudeUI();$("#tplBtn").hidden=!DL;if(S.page==="agent")renderAgent();})();
+</script>
+</body>
+</html>
